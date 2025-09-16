@@ -17,12 +17,12 @@ For rank-1, single-move gains are affine in ξ:
 """
 
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Tuple
 import argparse
 import numpy as np
 from tqdm import tqdm
+from rank1.shared import brute_best_rank1
 
 
 @dataclass(frozen=True)
@@ -36,32 +36,6 @@ class PredicateReport:
     violating_drop_idx: np.ndarray
     all_ok: bool
     roots: np.ndarray  # ξ where g_i^+(ξ)=0 if v_i≠0; else NaN
-
-
-def brute_best_rank1(
-    v: np.ndarray, lam: float = 1.0
-) -> Tuple[float, np.ndarray, float]:
-    """
-    Brute-force maximization of f(x) = lam * (v^T x)^2 over x ∈ {0,1}^n.
-    Returns (best_score, best_x, best_xi) with best_x as int {0,1}.
-    """
-    v = np.asarray(v, dtype=float)
-    n = v.size
-    best_score = -np.inf
-    best_x = np.zeros(n, dtype=int)
-    best_xi = 0.0
-
-    # Enumerate via bitmasks (n ≤ ~24 for brute force in CI)
-    for mask in range(1 << n):
-        # LSB corresponds to index 0
-        x = np.fromiter(((mask >> i) & 1 for i in range(n)), dtype=int, count=n)
-        xi = float(v @ x)
-        score = lam * (xi * xi)
-        if score > best_score:
-            best_score = score
-            best_x = x
-            best_xi = xi
-    return best_score, best_x, best_xi
 
 
 def check_rank1_predicates(

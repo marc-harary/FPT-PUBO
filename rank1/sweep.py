@@ -31,7 +31,7 @@ def roots_rank1(v: np.ndarray, lam: float) -> np.ndarray:
     """
     v = np.asarray(v, dtype=float)
     r = np.full_like(v, np.nan, dtype=float)
-    nz = (v != 0.0)
+    nz = v != 0.0
     r[nz] = -0.5 * v[nz]
     return r
 
@@ -92,7 +92,9 @@ def sweep_rank1(v: np.ndarray, lam: float = 1.0) -> Tuple[float, np.ndarray, flo
 
 
 # ---------- Trials ----------
-def random_instance(n: int, rng: np.random.Generator, dist: str = "gauss") -> np.ndarray:
+def random_instance(
+    n: int, rng: np.random.Generator, dist: str = "gauss"
+) -> np.ndarray:
     if dist == "gauss":
         return rng.standard_normal(n)
     if dist == "student3":

@@ -5,7 +5,10 @@ import numpy as np
 
 __all__ = ["brute_best_rank1"]
 
-def brute_best_rank1(v: np.ndarray, lam: float = 1.0) -> Tuple[float, np.ndarray, float]:
+
+def brute_best_rank1(
+    v: np.ndarray, lam: float = 1.0
+) -> Tuple[float, np.ndarray, float]:
     """
     Brute-force maximization of f(x) = lam * (v^T x)^2 over x ∈ {0,1}^n.
 
