@@ -13,9 +13,9 @@ function brute_force_unconstrained(Q, c)
     bf_best_val = 0.0
     bf_best_x = falses(n)
 
-    for mask in 1:(2^n - 1)
+    for mask = 1:(2^n-1)
         x = falses(n)
-        for i in 1:n
+        for i = 1:n
             x[i] = (mask >> (i - 1)) & 1 == 1
         end
         val = dot(x, Q, x) + dot(c, x)
@@ -28,7 +28,7 @@ function brute_force_unconstrained(Q, c)
     return bf_best_x, bf_best_val
 end
 
-function debug_seed(seed; n=5)
+function debug_seed(seed; n = 5)
     Random.seed!(seed)
 
     # Random symmetric matrix, then zero the diagonal
@@ -49,7 +49,7 @@ function debug_seed(seed; n=5)
     println("SEED $seed  (n=$n, r=$r)")
     println("="^60)
     println("Q =")
-    display(round.(Q, digits=4))
+    display(round.(Q, digits = 4))
     println("\nΛ = $(round.(Λ, digits=4))")
     println("diag(Q) = $(round.(diag(Q), digits=10))")
 
@@ -67,24 +67,26 @@ function debug_seed(seed; n=5)
     # Evaluate each predicate at ξ*
     println("\nPredicate evaluation at ξ*:")
     consistent = true
-    for i in 1:n
+    for i = 1:n
         val = dot(A[:, i], ξ_star) + t[i]
         sign_i = val > 0 ? 1 : (val < 0 ? -1 : 0)
         expected = x_bf[i] ? 1 : -1
         ok = (sign_i == expected)
         if !ok
             consistent = false
-            printstyled("  INCONSISTENT ", color=:red)
+            printstyled("  INCONSISTENT ", color = :red)
         else
-            printstyled("  ok           ", color=:green)
+            printstyled("  ok           ", color = :green)
         end
-        println("i=$i: a'ξ*+t = $(round(val, digits=8))  sign=$sign_i  x*[$i]=$(Int(x_bf[i]))")
+        println(
+            "i=$i: a'ξ*+t = $(round(val, digits=8))  sign=$sign_i  x*[$i]=$(Int(x_bf[i]))",
+        )
     end
 
     if consistent
-        printstyled("  All consistent ✅\n", color=:green)
+        printstyled("  All consistent ✅\n", color = :green)
     else
-        printstyled("  INCONSISTENCY FOUND ❌\n", color=:red)
+        printstyled("  INCONSISTENCY FOUND ❌\n", color = :red)
     end
 
     return consistent
@@ -94,8 +96,8 @@ function run_all()
     pass = 0
     fail = 0
     for n in [5, 6, 7, 8, 9, 10]
-        for seed in 1:50
-            ok = debug_seed(seed; n=n)
+        for seed = 1:50
+            ok = debug_seed(seed; n = n)
             ok ? (pass += 1) : (fail += 1)
         end
     end
@@ -103,9 +105,9 @@ function run_all()
     println("\n\n" * "="^60)
     println("OVERALL: $pass consistent, $fail inconsistent out of $(pass+fail)")
     if fail == 0
-        printstyled("ALL CONSISTENT ✅\n", color=:green)
+        printstyled("ALL CONSISTENT ✅\n", color = :green)
     else
-        printstyled("INCONSISTENCIES FOUND ❌\n", color=:red)
+        printstyled("INCONSISTENCIES FOUND ❌\n", color = :red)
     end
 end
 

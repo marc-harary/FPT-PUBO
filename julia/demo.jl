@@ -12,10 +12,10 @@ using .LowRankQUBO_IFS
 
 function run_demo()
     configs = [
-        (n=6,  r=2, k=3, seeds=1:20),
-        (n=8,  r=2, k=4, seeds=1:20),
-        (n=8,  r=2, k=5, seeds=1:20),
-        (n=10, r=2, k=5, seeds=1:20),
+        (n = 6, r = 2, k = 3, seeds = 1:20),
+        (n = 8, r = 2, k = 4, seeds = 1:20),
+        (n = 8, r = 2, k = 5, seeds = 1:20),
+        (n = 10, r = 2, k = 5, seeds = 1:20),
     ]
 
     passes = 0
@@ -36,7 +36,8 @@ function run_demo()
 
             # 1. Solve using the IFS Solver
             t_start = time()
-            x_opt, val_opt = LowRankQUBO_IFS.qubo_cc(V, Λ, k; c = c, algo = 3, exact = false)
+            x_opt, val_opt =
+                LowRankQUBO_IFS.qubo_cc(V, Λ, k; c = c, algo = 3, exact = false)
             t_ifs = time() - t_start
 
             # 2. Verify with Brute Force
@@ -61,26 +62,32 @@ function run_demo()
             # Check
             if val_opt == -Inf
                 skips += 1
-                printstyled("  SKIP  ", color=:yellow)
+                printstyled("  SKIP  ", color = :yellow)
                 println("seed=$seed  (no feasible readout)")
             elseif abs(val_opt - bf_best_val) < 1e-6
                 passes += 1
-                printstyled("  PASS  ", color=:green)
-                println("seed=$seed  val=$( round(val_opt, digits=4))  time=$(round(t_ifs, digits=3))s")
+                printstyled("  PASS  ", color = :green)
+                println(
+                    "seed=$seed  val=$( round(val_opt, digits=4))  time=$(round(t_ifs, digits=3))s",
+                )
             else
                 fails += 1
-                printstyled("  FAIL  ", color=:red)
-                println("seed=$seed  IFS=$val_opt  BF=$bf_best_val  gap=$(bf_best_val - val_opt)")
+                printstyled("  FAIL  ", color = :red)
+                println(
+                    "seed=$seed  IFS=$val_opt  BF=$bf_best_val  gap=$(bf_best_val - val_opt)",
+                )
             end
         end
     end
 
-    println("\n=== Summary: $passes passed, $fails failed, $skips skipped out of $(passes+fails+skips) trials ===")
+    println(
+        "\n=== Summary: $passes passed, $fails failed, $skips skipped out of $(passes+fails+skips) trials ===",
+    )
 
     if fails == 0
-        printstyled("ALL PASSED ✅\n", color=:green)
+        printstyled("ALL PASSED ✅\n", color = :green)
     else
-        printstyled("FAILURES DETECTED ❌\n", color=:red)
+        printstyled("FAILURES DETECTED ❌\n", color = :red)
     end
 end
 

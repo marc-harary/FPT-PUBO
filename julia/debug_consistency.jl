@@ -15,9 +15,9 @@ function brute_force_unconstrained(V, Λ, c)
     bf_best_val = 0.0
     bf_best_x = falses(n)
 
-    for mask in 1:(2^n - 1)
+    for mask = 1:(2^n-1)
         x = falses(n)
-        for i in 1:n
+        for i = 1:n
             x[i] = (mask >> (i - 1)) & 1 == 1
         end
         val = dot(x, Q, x) + dot(c, x)
@@ -30,7 +30,7 @@ function brute_force_unconstrained(V, Λ, c)
     return bf_best_x, bf_best_val
 end
 
-function debug_seed(seed; n=6, r=2)
+function debug_seed(seed; n = 6, r = 2)
     Random.seed!(seed)
     V = randn(n, r)
     Λ = randn(r) .* 5.0
@@ -53,10 +53,12 @@ function debug_seed(seed; n=6, r=2)
     # Evaluate each predicate at ξ*
     println("\nPredicate evaluation at ξ*:")
     gt_sign = zeros(Int, n)
-    for i in 1:n
+    for i = 1:n
         val = dot(A[:, i], ξ_star) + t[i]
         gt_sign[i] = val > 0 ? 1 : (val < 0 ? -1 : 0)
-        println("  h_$i: a'ξ* + t = $(round(val, digits=8))  sign=$(gt_sign[i])  x*[$i]=$(Int(x_bf[i]))")
+        println(
+            "  h_$i: a'ξ* + t = $(round(val, digits=8))  sign=$(gt_sign[i])  x*[$i]=$(Int(x_bf[i]))",
+        )
     end
 
     # Check consistency: does sign agree with x*?
@@ -66,22 +68,22 @@ function debug_seed(seed; n=6, r=2)
     # not at the ξ where x[i]=0.
     println("\nConsistency check (sign vs x*):")
     consistent = true
-    for i in 1:n
+    for i = 1:n
         expected = x_bf[i] ? 1 : -1
         ok = (gt_sign[i] == expected)
         if !ok
             consistent = false
-            printstyled("  INCONSISTENT ", color=:red)
+            printstyled("  INCONSISTENT ", color = :red)
             println("i=$i: x*[$i]=$(Int(x_bf[i])) but sign=$(gt_sign[i])")
         end
     end
 
     if consistent
-        printstyled("  All consistent ✅\n", color=:green)
+        printstyled("  All consistent ✅\n", color = :green)
     else
         # Show what the "sign-consistent" x would be
         x_from_sign = falses(n)
-        for i in 1:n
+        for i = 1:n
             x_from_sign[i] = (gt_sign[i] > 0)
         end
         v_from_sign = LowRankQUBO_IFS.obj(V, Λ, c, x_from_sign)
@@ -93,30 +95,33 @@ function debug_seed(seed; n=6, r=2)
         Q = V * Diagonal(Λ) * V'
         println("\n  Single-flip analysis from x*:")
         is_local_opt = true
-        for i in 1:n
+        for i = 1:n
             x_flip = copy(x_bf)
             x_flip[i] = !x_flip[i]
             v_flip = dot(x_flip, Q, x_flip) + dot(c, x_flip)
             delta = v_flip - v_bf
             if delta > 1e-10
                 is_local_opt = false
-                printstyled("    flip x[$i]: Δ = $(round(delta, digits=6)) (IMPROVES!) \n", color=:red)
+                printstyled(
+                    "    flip x[$i]: Δ = $(round(delta, digits=6)) (IMPROVES!) \n",
+                    color = :red,
+                )
             else
                 println("    flip x[$i]: Δ = $(round(delta, digits=6))")
             end
         end
         if is_local_opt
-            printstyled("  x* IS a local optimum (swap-stable)\n", color=:green)
+            printstyled("  x* IS a local optimum (swap-stable)\n", color = :green)
         end
     end
 end
 
 # Test failing seeds
 for seed in [14, 16]
-    debug_seed(seed; n=6, r=2)
+    debug_seed(seed; n = 6, r = 2)
 end
 
 println("\n\n--- n=8 failures ---")
 for seed in [5, 13, 19]
-    debug_seed(seed; n=8, r=2)
+    debug_seed(seed; n = 8, r = 2)
 end
