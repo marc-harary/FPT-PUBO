@@ -155,6 +155,40 @@ function qubo_cc(
     return bestx, bestv
 end
 
+# Build arrangement for single-coordinate flips (unconstrained QUBO)
+function flip_arrangement(V::AbstractMatrix, Λ::AbstractVector, c::AbstractVector)
+    n, r = size(V)
+    @assert length(Λ) == r
+    @assert length(c) == n
+
+    A = Matrix{Float64}(undef, r, n)   # columns are a_i for flip predicates
+    t = Vector{Float64}(undef, n)      # intercepts c_i
+
+    @inbounds for i = 1:n
+        # a_i = 2*Λ ⊙ V[i,:] (element-wise product with eigenvalues)
+        # b_i = c_i + Q_{ii}, where Q_{ii} = Σ_u Λ_u V[i,u]²
+        # (since x_i² = x_i for binary, diagonal absorbs into linear term)
+        qii = 0.0
+        for u = 1:r
+            A[u, i] = 2.0 * Λ[u] * V[i, u]
+            qii += Λ[u] * V[i, u]^2
+        end
+        t[i] = c[i] + qii
+    end
+
+    return A, t
+end
+
+# Direct readout from sign vector for unconstrained QUBO
+# Convention: s[i] > 0 means Δ_{e_i}(ξ) > 0, so set x[i] = 1
+function readout_unconstrained(n::Int, s)
+    x = falses(n)
+    @inbounds for i = 1:n
+        x[i] = (s[i] > 0)
+    end
+    return x
+end
+
 function qubo_unconstrained(
     V::AbstractMatrix,
     Λ::AbstractVector;
@@ -163,15 +197,30 @@ function qubo_unconstrained(
     exact::Bool = false,
 )
     n, _ = size(V)
-    bestx = falses(n);
+
+    # Build flip arrangement (n predicates, not n(n-1) swaps!)
+    A, t = flip_arrangement(V, Λ, c)
+    sigs = chamber_signs(A, t; algo = algo, exact = exact)
+
+    bestx = falses(n)
     bestv = -Inf
-    for k = 0:n
-        x, v = qubo_cc(V, Λ, k; c = c, algo = algo, exact = exact)
+
+    # Normalize sigs: Dict keys, matrix columns, or vector-of-vectors
+    iter =
+        sigs isa AbstractDict ? keys(sigs) :
+        sigs isa AbstractMatrix ? (view(sigs, :, j) for j = 1:size(sigs, 2)) : sigs
+
+    for s in iter
+        # Direct readout: x_i = 1 iff s[i] > 0
+        x = readout_unconstrained(n, s)
+        v = obj(V, Λ, c, x)
+
         if v > bestv
             bestv = v
             bestx .= x
         end
     end
+
     return bestx, bestv
 end
 
