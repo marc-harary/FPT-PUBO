@@ -74,15 +74,9 @@ end
 # Returns sorted support S (|S|=k) or nothing if ambiguous (SCC split needed).
 function readout_kclosure(g::SimpleDiGraph, k::Int)
     sccs = strongly_connected_components(g)
-    comp = zeros(Int, nv(g))
-    for (cid, vs) in enumerate(sccs)
-        for v in vs
-            comp[v] = cid
-        end
-    end
 
     # condensation DAG of SCCs
-    cg = condensation(g, comp)                 # vertices = SCC ids
+    cg = condensation(g, sccs)                 # vertices = SCC ids
     topo = topological_sort_by_dfs(cg)         # sources -> sinks
 
     S = Int[]
