@@ -14,9 +14,9 @@ function brute_force_unconstrained(Q, c_tilde)
     bf_best_val = 0.0
     bf_best_x = falses(n)
 
-    for mask in 1:(2^n - 1)
+    for mask = 1:(2^n-1)
         x = falses(n)
-        for i in 1:n
+        for i = 1:n
             x[i] = (mask >> (i - 1)) & 1 == 1
         end
 
@@ -33,10 +33,10 @@ end
 
 function run_demo()
     configs = [
-        (n=6,  r=2, seeds=1:50),
-        (n=8,  r=2, seeds=1:50),
-        (n=10, r=2, seeds=1:50),
-        (n=12, r=2, seeds=1:50),
+        (n = 6, r = 2, seeds = 1:50),
+        (n = 8, r = 2, seeds = 1:50),
+        (n = 10, r = 2, seeds = 1:50),
+        (n = 12, r = 2, seeds = 1:50),
     ]
 
     passes = 0
@@ -67,7 +67,13 @@ function run_demo()
 
             # 1. Solve using the IFS Solver with the zero-diagonal decomposition
             t_start = time()
-            x_opt, val_opt = LowRankQUBO_IFS.qubo_unconstrained(V_tilde, Λ_tilde; c = c_tilde, algo = 3, exact = false)
+            x_opt, val_opt = LowRankQUBO_IFS.qubo_unconstrained(
+                V_tilde,
+                Λ_tilde;
+                c = c_tilde,
+                algo = 3,
+                exact = false,
+            )
             t_ifs = time() - t_start
 
             # 2. Verify with Brute Force (using original Q and c̃)
@@ -76,22 +82,28 @@ function run_demo()
             # Check
             if abs(val_opt - bf_best_val) < 1e-6
                 passes += 1
-                printstyled("  PASS  ", color=:green)
-                println("seed=$seed  val=$(round(val_opt, digits=4))  |x|=$(count(x_opt))  time=$(round(t_ifs, digits=3))s")
+                printstyled("  PASS  ", color = :green)
+                println(
+                    "seed=$seed  val=$(round(val_opt, digits=4))  |x|=$(count(x_opt))  time=$(round(t_ifs, digits=3))s",
+                )
             else
                 fails += 1
-                printstyled("  FAIL  ", color=:red)
-                println("seed=$seed  IFS=$val_opt  BF=$bf_best_val  gap=$(bf_best_val - val_opt)")
+                printstyled("  FAIL  ", color = :red)
+                println(
+                    "seed=$seed  IFS=$val_opt  BF=$bf_best_val  gap=$(bf_best_val - val_opt)",
+                )
             end
         end
     end
 
-    println("\n=== Summary: $passes passed, $fails failed out of $(passes+fails) trials ===")
+    println(
+        "\n=== Summary: $passes passed, $fails failed out of $(passes+fails) trials ===",
+    )
 
     if fails == 0
-        printstyled("ALL PASSED ✅\n", color=:green)
+        printstyled("ALL PASSED ✅\n", color = :green)
     else
-        printstyled("FAILURES DETECTED ❌\n", color=:red)
+        printstyled("FAILURES DETECTED ❌\n", color = :red)
     end
 end
 
