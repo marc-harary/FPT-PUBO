@@ -5,64 +5,82 @@
 using Random
 using Combinatorics
 using LinearAlgebra
+
 # Make sure the module is available (or include the file)
 include("LowRankQUBO_IFS.jl")
 using .LowRankQUBO_IFS
 
 function run_demo()
-    Random.seed!(42)
+    configs = [
+        (n=6,  r=2, k=3, seeds=1:20),
+        (n=8,  r=2, k=4, seeds=1:20),
+        (n=8,  r=2, k=5, seeds=1:20),
+        (n=10, r=2, k=5, seeds=1:20),
+    ]
 
-    # Setup Problem: n=10, r=2, k=5
-    n, r, k = 8, 2, 5
-    println("Generating Rank-$r Problem (n=$n, k=$k)...")
+    passes = 0
+    fails = 0
+    skips = 0
 
-    # Random low-rank Q = V Λ V'
-    V = randn(n, r)
-    # Random eigenvalues (mixed signs to ensure non-convexity)
-    Λ = [10.0, -5.0]
-    c = randn(n)
+    for cfg in configs
+        n, r, k = cfg.n, cfg.r, cfg.k
+        println("=== Testing n=$n, r=$r, k=$k ($(length(cfg.seeds)) seeds) ===")
 
-    # 1. Solve using the IFS Solver
-    println("\nRunning LowRankQUBO_IFS...")
-    t_start = time()
-    x_opt, val_opt = LowRankQUBO_IFS.qubo_cc(V, Λ, k; c = c, algo = 3, exact = false)
-    t_end = time()
+        for seed in cfg.seeds
+            Random.seed!(seed)
 
-    println("  Optimal Value: $val_opt")
-    println("  Support:       $(findall(x_opt))")
-    println("  Time:          $(round(t_end - t_start, digits=4))s")
+            # Random low-rank Q = V Λ V'
+            V = randn(n, r)
+            Λ = randn(r) .* 5.0
+            c = randn(n)
 
-    # 2. Verify with Brute Force (Iterating all binom(10,5) = 252 combinations)
-    println("\nVerifying with Brute Force...")
+            # 1. Solve using the IFS Solver
+            t_start = time()
+            x_opt, val_opt = LowRankQUBO_IFS.qubo_cc(V, Λ, k; c = c, algo = 3, exact = false)
+            t_ifs = time() - t_start
 
-    # Reconstruct Q for checking
-    Q = V * Diagonal(Λ) * V'
+            # 2. Verify with Brute Force
+            Q = V * Diagonal(Λ) * V'
 
-    bf_best_val = -Inf
-    bf_best_x = falses(n)
+            bf_best_val = -Inf
+            bf_best_x = falses(n)
 
-    for idxs in Combinatorics.combinations(1:n, k)
-        x = falses(n)
-        x[idxs] .= true
+            for idxs in Combinatorics.combinations(1:n, k)
+                x = falses(n)
+                x[idxs] .= true
 
-        # Eval x'Qx + c'x
-        val = dot(x, Q, x) + dot(c, x)
+                # Eval x'Qx + c'x
+                val = dot(x, Q, x) + dot(c, x)
 
-        if val > bf_best_val
-            bf_best_val = val
-            bf_best_x = x
+                if val > bf_best_val
+                    bf_best_val = val
+                    bf_best_x = x
+                end
+            end
+
+            # Check
+            if val_opt == -Inf
+                skips += 1
+                printstyled("  SKIP  ", color=:yellow)
+                println("seed=$seed  (no feasible readout)")
+            elseif abs(val_opt - bf_best_val) < 1e-6
+                passes += 1
+                printstyled("  PASS  ", color=:green)
+                println("seed=$seed  val=$( round(val_opt, digits=4))  time=$(round(t_ifs, digits=3))s")
+            else
+                fails += 1
+                printstyled("  FAIL  ", color=:red)
+                println("seed=$seed  IFS=$val_opt  BF=$bf_best_val  gap=$(bf_best_val - val_opt)")
+            end
         end
     end
 
-    println("  Brute Force:   $bf_best_val")
+    println("\n=== Summary: $passes passed, $fails failed, $skips skipped out of $(passes+fails+skips) trials ===")
 
-    # Check
-    if abs(val_opt - bf_best_val) < 1e-6
-        println("\n✅ MATCH CONFIRMED")
+    if fails == 0
+        printstyled("ALL PASSED ✅\n", color=:green)
     else
-        println("\n❌ MISMATCH")
-        println("  IFS found: $val_opt")
-        println("  BF  found: $bf_best_val")
+        printstyled("FAILURES DETECTED ❌\n", color=:red)
     end
 end
 

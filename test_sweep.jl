@@ -1,5 +1,5 @@
 # Multi-trial stress test: compare IFS solver vs brute force
-using Random, Combinatorics, LinearAlgebra
+using Random, Combinatorics, LinearAlgebra, ProgressMeter
 include("LowRankQUBO_IFS.jl")
 using .LowRankQUBO_IFS
 
@@ -25,8 +25,12 @@ function run_sweep()
     fails = 0
     skips = 0
 
+    configs = [(6,2,3), (8,2,4), (8,2,5), (10,2,5)]
+    total = 20 * length(configs)
+    p = Progress(total; desc="Testing: ", showspeed=true)
+
     for seed in 1:20
-        for (n, r, k) in [(6,2,3), (8,2,4), (8,2,5), (10,2,5)]
+        for (n, r, k) in configs
             Random.seed!(seed)
             V = randn(n, r)
             Λ = randn(r) .* 5.0
@@ -37,14 +41,13 @@ function run_sweep()
 
             if v_ifs == -Inf
                 skips += 1
-                printstyled("  SKIP  ", color=:yellow)
-                println("seed=$seed n=$n r=$r k=$k  (no feasible readout)")
+                next!(p; showvalues=[(:status,"SKIP"), (:seed,seed), (:n,n), (:r,r), (:k,k)])
             elseif abs(v_ifs - v_bf) < 1e-6
                 passes += 1
+                next!(p; showvalues=[(:passes,passes), (:fails,fails), (:skips,skips)])
             else
                 fails += 1
-                printstyled("  FAIL  ", color=:red)
-                println("seed=$seed n=$n r=$r k=$k  IFS=$v_ifs  BF=$v_bf  gap=$(v_bf - v_ifs)")
+                next!(p; showvalues=[(:status,"FAIL"), (:seed,seed), (:n,n), (:r,r), (:k,k), (:gap,v_bf - v_ifs)])
             end
         end
     end
